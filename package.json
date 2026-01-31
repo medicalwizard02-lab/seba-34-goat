@@ -1,0 +1,31 @@
+{
+  "name": "heart-buddy",
+  "version": "1.0.0",
+  "description": "Heart Buddy - Relationship verification platform",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "keywords": [
+    "relationships",
+    "verification",
+    "dating"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "lucide-react": "^0.563.0",
+    "next": "^16.1.6",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "private": true
+}
