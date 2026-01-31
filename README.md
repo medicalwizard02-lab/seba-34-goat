@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Heart Buddy
 
 A relationship verification platform that helps individuals and couples make informed decisions through transparent relationship declarations and privacy-first verification.
@@ -275,3 +276,6 @@ For issues or questions:
 
 **Heart Buddy** - We Prevent Cheating, Not Peace © 2026
 
+=======
+# JUN-_goat-
+>>>>>>> 8b35a740176246ff33cd8d1b60d0f92bae929c52
