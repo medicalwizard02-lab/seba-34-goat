@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "pages/**/*.js",
-      "use": "@vercel/next"
-    }
-  ],
   "functions": {
     "pages/api/**/*.js": {
       "memory": 1024,
