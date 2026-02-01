@@ -1,5 +1,4 @@
-// Catch-all API route that forwards to Express app
-// This makes all /api/* routes work on Vercel
+// Root API route handler
 const app = require('../../api/index');
 
 export default app;
