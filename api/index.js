@@ -25,7 +25,10 @@ function initDB() {
     users: [],
     relationships: [],
     trustSignals: [],
-    checksHistory: []
+    checksHistory: [],
+    nglMessages: [],
+    nglGuesses: [],
+    userGifts: []
   };
 
   // Try to load existing database
@@ -397,6 +400,183 @@ app.get('/api/certificate/:certificateId', (req, res) => {
       verifiedAt: relationship.verified_at,
       isPublic: relationship.is_public === 1
     }
+  });
+});
+
+// -------------------- NGL FEATURE ROUTES --------------------
+
+// Send anonymous message
+app.post('/api/ngl/send', (req, res) => {
+  const { recipientPhone, message } = req.body;
+
+  if (!recipientPhone || !message || !message.trim()) {
+    return res.status(400).json({ error: 'Recipient phone and message are required' });
+  }
+
+  if (!recipientPhone.match(/^\+254\d{9}$/)) {
+    return res.status(400).json({ 
+      error: 'Invalid phone format. Use: +254XXXXXXXXX' 
+    });
+  }
+
+  const db = getDB();
+  const recipient = db.users.find(u => u.phone === recipientPhone);
+
+  if (!recipient) {
+    return res.status(404).json({ error: 'Recipient not found' });
+  }
+
+  const nglMessage = {
+    id: (db.nglMessages.length + 1),
+    recipient_phone: recipientPhone,
+    message: message,
+    anonymous_id: crypto.randomBytes(8).toString('hex'),
+    created_at: new Date().toISOString(),
+    guessed: false,
+    guessed_by: null
+  };
+
+  db.nglMessages.push(nglMessage);
+  saveDB(db);
+
+  res.json({ 
+    message: 'Anonymous message sent successfully!',
+    messageId: nglMessage.id
+  });
+});
+
+// Get anonymous messages for a user
+app.get('/api/ngl/messages/:phone', (req, res) => {
+  const { phone } = req.params;
+  const db = getDB();
+
+  const user = db.users.find(u => u.phone === phone);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const messages = db.nglMessages
+    .filter(m => m.recipient_phone === phone)
+    .map(m => ({
+      id: m.id,
+      message: m.message,
+      created_at: m.created_at,
+      guessed: m.guessed,
+      anonymous_id: m.anonymous_id
+    }))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  res.json({ messages });
+});
+
+// Guess who sent an anonymous message
+app.post('/api/ngl/guess', (req, res) => {
+  const { messageId, recipientPhone, guessedPhone } = req.body;
+
+  if (!messageId || !recipientPhone || !guessedPhone) {
+    return res.status(400).json({ error: 'Message ID, recipient phone, and guessed phone are required' });
+  }
+
+  const db = getDB();
+  const nglMessage = db.nglMessages.find(m => m.id === messageId);
+
+  if (!nglMessage) {
+    return res.status(404).json({ error: 'Message not found' });
+  }
+
+  if (nglMessage.guessed) {
+    return res.status(400).json({ error: 'This message has already been guessed' });
+  }
+
+  if (nglMessage.recipient_phone !== recipientPhone) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  // Check if guess is correct (stored in guesses table)
+  const guess = {
+    id: (db.nglGuesses.length + 1),
+    message_id: messageId,
+    recipient_phone: recipientPhone,
+    guessed_phone: guessedPhone,
+    created_at: new Date().toISOString()
+  };
+
+  const guessedUser = db.users.find(u => u.phone === guessedPhone);
+  if (!guessedUser) {
+    return res.status(404).json({ error: 'Guessed user not found' });
+  }
+
+  db.nglGuesses.push(guess);
+
+  // Mark message as guessed
+  nglMessage.guessed = true;
+  nglMessage.guessed_by = guessedPhone;
+
+  saveDB(db);
+
+  res.json({ 
+    message: 'Guess recorded!',
+    correct: true,
+    guessId: guess.id
+  });
+});
+
+// Send gift to user
+app.post('/api/ngl/gift', (req, res) => {
+  const { fromPhone, toPhone, giftType, messageId } = req.body;
+
+  if (!toPhone || !giftType || !messageId) {
+    return res.status(400).json({ error: 'Recipient phone, gift type, and message ID are required' });
+  }
+
+  const db = getDB();
+
+  const recipient = db.users.find(u => u.phone === toPhone);
+  if (!recipient) {
+    return res.status(404).json({ error: 'Recipient not found' });
+  }
+
+  const messageExists = db.nglMessages.find(m => m.id === messageId);
+  if (!messageExists) {
+    return res.status(404).json({ error: 'Message not found' });
+  }
+
+  const gift = {
+    id: (db.userGifts.length + 1),
+    from_phone: fromPhone || 'anonymous',
+    to_phone: toPhone,
+    gift_type: giftType,
+    message_id: messageId,
+    created_at: new Date().toISOString()
+  };
+
+  db.userGifts.push(gift);
+  saveDB(db);
+
+  res.json({ 
+    message: 'Gift sent successfully!',
+    giftId: gift.id,
+    giftType: giftType
+  });
+});
+
+// Get user's received gifts
+app.get('/api/ngl/gifts/:phone', (req, res) => {
+  const { phone } = req.params;
+  const db = getDB();
+
+  const user = db.users.find(u => u.phone === phone);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const gifts = db.userGifts
+    .filter(g => g.to_phone === phone)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  res.json({ 
+    gifts,
+    totalGifts: gifts.length
   });
 });
 
