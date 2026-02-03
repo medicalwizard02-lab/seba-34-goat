@@ -16,11 +16,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    console.log('Creating challenge for userId:', userId);
+    console.log('🔍 DEBUG: Received request to create Wild Guess challenge');
+    console.log('   userId:', userId);
+    console.log('   timerDuration:', timerDuration);
+    console.log('   DB_HOST env:', process.env.DB_HOST || 'NOT SET');
+    console.log('   DB_NAME env:', process.env.DB_NAME || 'NOT SET');
     
     const challenge = await dbHelpers.createWildGuessChallenge(userId, timerDuration);
     
-    console.log('Challenge created:', challenge);
+    console.log('✓ Challenge created:', challenge.id);
 
     // Helper to encode share links
     const encodeShareLink = (baseLink, platform) => {
@@ -51,11 +55,14 @@ export default async function handler(req, res) {
       }
     });
   } catch (error) {
-    console.error('Error creating challenge:', error);
-    console.error('Error stack:', error.stack);
+    console.error('❌ Error creating challenge:', error.message);
+    console.error('   Stack:', error.stack);
+    console.error('   DB_HOST:', process.env.DB_HOST);
+    console.error('   DB_PORT:', process.env.DB_PORT);
+    
     res.status(500).json({ 
       error: 'Failed to create challenge',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: error.message
     });
   }
 }
