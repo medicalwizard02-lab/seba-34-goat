@@ -16,6 +16,9 @@ app.get('/api', (req, res) => {
 app.use(cors());
 app.use(bodyParser.json());
 
+// Import Wild Guess routes
+const wildGuessRouter = require('../pages/api/wild-guess');
+
 // Database file path
 const dbPath = path.join('/tmp', 'database.json');
 
@@ -34,7 +37,17 @@ function initDB() {
   // Try to load existing database
   if (fs.existsSync(dbPath)) {
     try {
-      db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+      const loadedDb = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+      // Ensure all required arrays exist
+      db = {
+        users: loadedDb.users || [],
+        relationships: loadedDb.relationships || [],
+        trustSignals: loadedDb.trustSignals || [],
+        checksHistory: loadedDb.checksHistory || [],
+        nglMessages: loadedDb.nglMessages || [],
+        nglGuesses: loadedDb.nglGuesses || [],
+        userGifts: loadedDb.userGifts || []
+      };
     } catch (e) {
       console.log('Creating new database');
     }
@@ -579,6 +592,9 @@ app.get('/api/ngl/gifts/:phone', (req, res) => {
     totalGifts: gifts.length
   });
 });
+
+// Register Wild Guess routes
+app.use('/api/wild-guess', wildGuessRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

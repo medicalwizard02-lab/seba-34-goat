@@ -900,7 +900,7 @@ export default function HeartBuddyLaunch() {
           <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-purple-200">
             <div className="flex items-center gap-2 mb-6">
               <h3 className="text-2xl font-extrabold text-purple-600">
-                <span className="flex items-center gap-2"><Sparkles className="w-6 h-6" /> NGL (Not Gonna Lie)</span>
+                <span className="flex items-center gap-2"><Sparkles className="w-6 h-6" /> Wild Guess</span>
               </h3>
             </div>
 
@@ -945,7 +945,7 @@ export default function HeartBuddyLaunch() {
             {nglMessages.length > 0 && (
               <div>
                 <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <MessageCircle className="w-5 h-5 text-purple-500" /> Messages for You ({nglMessages.length})
+                  <MessageCircle className="w-5 h-5 text-purple-500" /> Messages for You <span className="ml-1">({nglMessages.length})</span>
                 </h4>
                 <div className="space-y-4">
                   {nglMessages.map((msg) => (
@@ -957,7 +957,7 @@ export default function HeartBuddyLaunch() {
                         <p className="text-gray-800 italic">"{msg.message}"</p>
                       </div>
                       <p className="text-xs text-gray-500 mb-3">
-                        Received {new Date(msg.created_at).toLocaleDateString()} • Status: {msg.guessed ? "✓ Guessed" : "Pending"}
+                        Received {new Date(msg.created_at).toLocaleDateString()} • Status: <span>{msg.guessed ? "✓ Guessed" : "Pending"}</span>
                       </p>
                       
                       {!msg.guessed && (
@@ -1009,8 +1009,8 @@ export default function HeartBuddyLaunch() {
           <div className="bg-gradient-to-br from-yellow-50 via-orange-50 to-pink-50 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border-2 border-yellow-300">
             <h3 className="text-3xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-orange-600 flex items-center gap-3">
               <Gift className="w-8 h-8 text-yellow-600" /> 
-              Your Gift Collection 
-              <span className="text-2xl text-yellow-500 font-bold">({userGifts.length})</span>
+              <span>Your Gift Collection</span>
+              <span className="text-2xl text-yellow-500 font-bold ml-2">({userGifts.length})</span>
             </h3>
 
             {/* Stats bar */}
