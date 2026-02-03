@@ -5,7 +5,7 @@ import { Check, CheckCheck, Loader2 } from 'lucide-react';
  * ChatMessage - Individual message bubble component
  * Displays message with sender type, timestamp, and read status
  */
-const ChatMessage = ({ message, isOwn, senderName = "Anonymous" }) => {
+const ChatMessage = ({ message, isOwn }) => {
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -54,13 +54,6 @@ const ChatMessage = ({ message, isOwn, senderName = "Anonymous" }) => {
   return (
     <div className={`mb-4 flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-xs lg:max-w-md xl:max-w-lg`}>
-        {/* Sender name for group context */}
-        {!isOwn && message.sender_type === 'anonymous' && (
-          <div className="text-xs text-gray-500 mb-1 px-2">
-            🔒 {senderName}
-          </div>
-        )}
-
         {/* Message bubble */}
         <div
           className={`

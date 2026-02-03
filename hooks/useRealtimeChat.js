@@ -34,13 +34,18 @@ const useRealtimeChat = (challengeId, userId) => {
   const sendMessage = useCallback(async (messageText, messageType = 'text') => {
     if (!messageText.trim() || !challengeId) return;
 
+    // Determine sender type based on userId format
+    const isAnonymous = userId && userId.toString().startsWith('anon_');
+    const senderType = isAnonymous ? 'anonymous' : 'registered';
+    const senderIdForRequest = isAnonymous ? null : userId;
+
     try {
       const response = await fetch(`/api/wild-guess/${challengeId}/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          senderId: userId,
-          senderType: 'registered',
+          senderId: senderIdForRequest,
+          senderType: senderType,
           messageText: messageText.trim(),
           messageType
         })
@@ -53,7 +58,7 @@ const useRealtimeChat = (challengeId, userId) => {
           id: data.messageId,
           challenge_id: challengeId,
           sender_user_id: userId,
-          sender_type: 'registered',
+          sender_type: senderType,
           message_text: messageText,
           message_type: messageType,
           is_read: false,

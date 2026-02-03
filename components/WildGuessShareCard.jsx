@@ -179,7 +179,11 @@ const WildGuessShareCard = ({ challenge, userName = "Anonymous" }) => {
         <div className="flex flex-col items-center gap-3 p-4 bg-white rounded-lg border border-gray-200">
           <Link className="w-8 h-8 text-purple-600" />
           <span className="text-sm font-medium text-gray-700">Timer</span>
-          <span className="text-xs text-gray-500">5:00 minutes</span>
+          <span className="text-xs text-gray-500">
+            {challenge?.timer_duration_seconds
+              ? `${Math.floor(challenge.timer_duration_seconds / 60)}:${String(challenge.timer_duration_seconds % 60).padStart(2, '0')} minutes`
+              : '10:00 minutes'}
+          </span>
         </div>
       </div>
 

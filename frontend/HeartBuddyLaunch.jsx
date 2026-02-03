@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Heart, ShieldCheck, CheckCircle, Share2, Lock, AlertTriangle, Loader2, Sparkles, Gift, MessageCircle, Zap, Crown, Flower, Smartphone, Gem, Wine } from "lucide-react";
+import { Heart, ShieldCheck, CheckCircle, Share2, Lock, AlertTriangle, Loader2, Sparkles, Gift, Zap, Crown, Flower, Smartphone, Gem, Wine, Link as LinkIcon } from "lucide-react";
+import WildGuessShareCard from "../components/WildGuessShareCard";
 
 // API Configuration - Vercel will auto-detect this
 const API_URL = typeof window !== 'undefined' 
@@ -7,6 +8,15 @@ const API_URL = typeof window !== 'undefined'
       ? 'http://localhost:3001/api' 
       : '/api')
   : '/api';
+
+const parseJsonResponse = async (response) => {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+  const text = await response.text();
+  return { error: text || 'Non-JSON response' };
+};
 
 // Gift type mappings with emojis and descriptions
 const GIFT_TYPES = {
@@ -224,15 +234,11 @@ export default function HeartBuddyLaunch() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [nglMessage, setNglMessage] = useState("");
-  const [nglRecipientPhone, setNglRecipientPhone] = useState("");
-  const [nglMessages, setNglMessages] = useState([]);
-  const [guessPhone, setGuessPhone] = useState("");
-  const [activeMessageId, setActiveMessageId] = useState(null);
   const [userGifts, setUserGifts] = useState([]);
-  const [showNglTab, setShowNglTab] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [newGiftId, setNewGiftId] = useState(null);
+  const [wildGuessChallenge, setWildGuessChallenge] = useState(null);
+  const [creatingChallenge, setCreatingChallenge] = useState(false);
 
   // Load user from localStorage on mount
   useEffect(() => {
@@ -243,7 +249,6 @@ export default function HeartBuddyLaunch() {
       setSignedIn(true);
       setPhone(user.phone);
       loadUserRelationships(user.phone);
-      loadNglMessages(user.phone);
       loadUserGifts(user.phone);
     }
   }, []);
@@ -263,8 +268,8 @@ export default function HeartBuddyLaunch() {
   const loadUserRelationships = async (userPhone) => {
     try {
       const response = await fetch(`${API_URL}/relationships/${userPhone}`);
-      const data = await response.json();
-      if (response.ok) {
+      const data = await parseJsonResponse(response);
+      if (response.ok && data.relationships) {
         setRelationships(data.relationships);
       }
     } catch (err) {
@@ -272,25 +277,13 @@ export default function HeartBuddyLaunch() {
     }
   };
 
-  // Load NGL messages
-  const loadNglMessages = async (userPhone) => {
-    try {
-      const response = await fetch(`${API_URL}/ngl/messages/${userPhone}`);
-      const data = await response.json();
-      if (response.ok) {
-        setNglMessages(data.messages);
-      }
-    } catch (err) {
-      console.error("Failed to load NGL messages:", err);
-    }
-  };
 
   // Load user gifts
   const loadUserGifts = async (userPhone) => {
     try {
       const response = await fetch(`${API_URL}/ngl/gifts/${userPhone}`);
-      const data = await response.json();
-      if (response.ok) {
+      const data = await parseJsonResponse(response);
+      if (response.ok && data.gifts) {
         const oldLength = userGifts.length;
         const newGifts = data.gifts;
         setUserGifts(newGifts);
@@ -489,101 +482,38 @@ export default function HeartBuddyLaunch() {
     setCheckResult(null);
   };
 
-  // Handle sending anonymous message
-  const handleSendNgl = async () => {
+  const handleCreateWildGuessLink = async () => {
+    if (!currentUser?.id) {
+      setError("Please sign in to create a Wild Guess link.");
+      return;
+    }
+
+    setCreatingChallenge(true);
     setError(null);
     setSuccess(null);
-    setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/ngl/send`, {
+      const response = await fetch(`${API_URL}/wild-guess/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          recipientPhone: nglRecipientPhone,
-          message: nglMessage,
-        }),
+          userId: currentUser.id,
+          timerDuration: 600
+        })
       });
 
-      const data = await response.json();
-
+      const data = await parseJsonResponse(response);
       if (!response.ok) {
-        setError(data.error);
-        setLoading(false);
+        setError(data.error || "Failed to create challenge");
         return;
       }
 
-      setSuccess("Anonymous message sent! Your secret is safe 🤐");
-      setNglMessage("");
-      setNglRecipientPhone("");
+      setWildGuessChallenge(data.challenge);
+      setSuccess("Challenge created! Share your link to start the game.");
     } catch (err) {
-      setError("Failed to send message. Please try again.");
+      setError("Failed to create Wild Guess link. Please try again.");
     } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle guessing sender
-  const handleGuessNgl = async (messageId) => {
-    setError(null);
-    setSuccess(null);
-    setLoading(true);
-
-    try {
-      const response = await fetch(`${API_URL}/ngl/guess`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messageId: messageId,
-          recipientPhone: currentUser.phone,
-          guessedPhone: guessPhone,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error);
-        setLoading(false);
-        return;
-      }
-
-      setSuccess("Great guess! You've earned a gift! 🎁");
-      await handleSendGift(messageId, guessPhone);
-      setGuessPhone("");
-      setActiveMessageId(null);
-      loadNglMessages(currentUser.phone);
-    } catch (err) {
-      setError("Failed to record guess. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle sending gift
-  const handleSendGift = async (messageId, toPhone) => {
-    try {
-      // Random gift type from available gifts
-      const giftTypes = Object.keys(GIFT_TYPES);
-      const randomGift = giftTypes[Math.floor(Math.random() * giftTypes.length)];
-      
-      const response = await fetch(`${API_URL}/ngl/gift`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fromPhone: currentUser.phone,
-          toPhone: toPhone,
-          giftType: randomGift,
-          messageId: messageId,
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        loadUserGifts(toPhone);
-      }
-    } catch (err) {
-      console.error("Failed to send gift:", err);
+      setCreatingChallenge(false);
     }
   };
 
@@ -894,7 +824,7 @@ export default function HeartBuddyLaunch() {
         </section>
       )}
 
-      {/* NGL FEATURE */}
+      {/* WILD GUESS FEATURE */}
       {signedIn && (
         <section className="max-w-4xl mx-auto px-4 py-12">
           <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-purple-200">
@@ -903,101 +833,33 @@ export default function HeartBuddyLaunch() {
                 <span className="flex items-center gap-2"><Sparkles className="w-6 h-6" /> Wild Guess</span>
               </h3>
             </div>
-
-            {/* SEND ANONYMOUS MESSAGE */}
-            <div className="mb-8 pb-8 border-b border-purple-100">
+            <div className="mb-6">
               <h4 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-purple-500" /> Send Anonymous Message
+                <LinkIcon className="w-5 h-5 text-purple-500" /> Create Your Challenge Link
               </h4>
-              <p className="text-sm text-gray-600 mb-4">Send a private message anonymously to someone. They'll try to guess who sent it!</p>
-              <input
-                value={nglRecipientPhone}
-                onChange={(e) => setNglRecipientPhone(e.target.value)}
-                placeholder="Recipient's phone number (e.g., +254712345678)"
-                className="w-full border-2 border-purple-200 focus:border-purple-400 px-4 py-3 rounded-xl mb-3 outline-none transition"
-                disabled={loading}
-              />
-              <textarea
-                value={nglMessage}
-                onChange={(e) => setNglMessage(e.target.value)}
-                placeholder="Write your anonymous message... (keep it kind!)"
-                className="w-full border-2 border-purple-200 focus:border-purple-400 px-4 py-3 rounded-xl mb-3 outline-none transition resize-none"
-                rows="3"
-                disabled={loading}
-              />
-              <button
-                onClick={handleSendNgl}
-                disabled={loading || !nglMessage.trim() || !nglRecipientPhone}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:scale-105 transition-transform"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  "Send Anonymously"
-                )}
-              </button>
+              <p className="text-sm text-gray-600 mb-4">
+                Create a Wild Guess link and share it. Anyone can message you anonymously, and you’ll try to guess who it is during the timer.
+              </p>
+              {!wildGuessChallenge && (
+                <button
+                  onClick={handleCreateWildGuessLink}
+                  disabled={creatingChallenge}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                >
+                  {creatingChallenge ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Link"
+                  )}
+                </button>
+              )}
             </div>
 
-            {/* RECEIVE & GUESS MESSAGES */}
-            {nglMessages.length > 0 && (
-              <div>
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <MessageCircle className="w-5 h-5 text-purple-500" /> Messages for You <span className="ml-1">({nglMessages.length})</span>
-                </h4>
-                <div className="space-y-4">
-                  {nglMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className="border-2 border-purple-200 rounded-2xl p-5 bg-gradient-to-br from-purple-50 to-white shadow-inner"
-                    >
-                      <div className="bg-gradient-to-r from-purple-100 to-pink-100 p-4 rounded-xl mb-4">
-                        <p className="text-gray-800 italic">"{msg.message}"</p>
-                      </div>
-                      <p className="text-xs text-gray-500 mb-3">
-                        Received {new Date(msg.created_at).toLocaleDateString()} • Status: <span>{msg.guessed ? "✓ Guessed" : "Pending"}</span>
-                      </p>
-                      
-                      {!msg.guessed && (
-                        <div className="flex gap-3">
-                          <input
-                            type="text"
-                            placeholder="Who sent this? (+254...)"
-                            value={activeMessageId === msg.id ? guessPhone : ""}
-                            onChange={(e) => {
-                              setActiveMessageId(msg.id);
-                              setGuessPhone(e.target.value);
-                            }}
-                            disabled={loading || activeMessageId !== msg.id}
-                            className="flex-1 border-2 border-purple-200 focus:border-purple-400 px-3 py-2 rounded-lg outline-none transition text-sm"
-                          />
-                          <button
-                            onClick={() => handleGuessNgl(msg.id)}
-                            disabled={loading || activeMessageId !== msg.id || !guessPhone}
-                            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition"
-                          >
-                            Guess!
-                          </button>
-                        </div>
-                      )}
-                      {msg.guessed && (
-                        <div className="bg-green-100 border border-green-300 text-green-800 px-3 py-2 rounded-lg text-sm font-semibold">
-                          ✓ You guessed correctly! Check your gifts 🎁
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {nglMessages.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>No anonymous messages yet. Share your link to receive some!</p>
-              </div>
+            {wildGuessChallenge && (
+              <WildGuessShareCard challenge={wildGuessChallenge} userName={currentUser?.username || "Anonymous"} />
             )}
           </div>
         </section>

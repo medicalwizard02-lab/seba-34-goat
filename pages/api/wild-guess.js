@@ -10,7 +10,7 @@ const dbHelpers = require('../../config/dbHelpers');
  */
 router.post('/create', async (req, res) => {
   try {
-    const { userId, timerDuration = 300 } = req.body;
+    const { userId, timerDuration = 600 } = req.body;
 
     if (!userId) {
       return res.status(400).json({ error: 'userId is required' });
@@ -49,16 +49,25 @@ router.get('/:challengeToken', async (req, res) => {
       return res.status(404).json({ error: 'Challenge not found' });
     }
 
-    // Get messages, guesses, gifts for this challenge
-    const [messages, guesses, gifts, clues] = await Promise.all([
+    // Get messages, guesses, gifts, clues, and target user profile
+    const [messages, guesses, gifts, clues, targetUser] = await Promise.all([
       dbHelpers.getChallengeMessages(challenge.id),
       dbHelpers.getChallengeGuesses(challenge.id),
       dbHelpers.getChallengeGifts(challenge.id),
-      dbHelpers.getChallengeClues(challenge.id)
+      dbHelpers.getChallengeClues(challenge.id),
+      dbHelpers.getUserById(challenge.target_user_id)
     ]);
 
     res.json({
       challenge,
+      targetUser: targetUser
+        ? {
+            id: targetUser.id,
+            username: targetUser.username,
+            avatar_url: targetUser.avatar_url,
+            bio: targetUser.bio
+          }
+        : null,
       messages,
       guesses,
       gifts,
@@ -77,14 +86,15 @@ router.get('/:challengeToken', async (req, res) => {
 router.post('/:challengeId/message', async (req, res) => {
   try {
     const { challengeId } = req.params;
-    const { senderId, senderType, messageText, messageType = 'text' } = req.body;
+    const { senderId, senderType, messageText, messageType = 'text', senderName } = req.body;
 
     const messageId = await dbHelpers.addWildGuessMessage(
       challengeId,
       senderId,
       senderType,
       messageText,
-      messageType
+      messageType,
+      senderName
     );
 
     res.status(201).json({
@@ -95,6 +105,7 @@ router.post('/:challengeId/message', async (req, res) => {
         challenge_id: challengeId,
         sender_user_id: senderId,
         sender_type: senderType,
+        sender_name: senderName,
         message_text: messageText,
         message_type: messageType
       }

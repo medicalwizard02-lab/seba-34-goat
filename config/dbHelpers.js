@@ -69,7 +69,7 @@ async function getCheckHistory(userId) {
 }
 
 // ========== WILD GUESS CHALLENGES ==========
-async function createWildGuessChallenge(targetUserId, timerDuration = 300) {
+async function createWildGuessChallenge(targetUserId, timerDuration = 600) {
   const challengeToken = crypto.randomBytes(32).toString('hex');
   const shareLink = `${process.env.APP_URL || 'http://localhost:3000'}/wild-guess/${challengeToken}`;
   
@@ -139,10 +139,10 @@ async function revealChallengeIdentity(challengeId, revealedByUserId, revealMeth
 }
 
 // ========== WILD GUESS MESSAGES ==========
-async function addWildGuessMessage(challengeId, senderId, senderType, messageText, messageType = 'text') {
+async function addWildGuessMessage(challengeId, senderId, senderType, messageText, messageType = 'text', senderName = null) {
   const [result] = await pool.execute(
-    'INSERT INTO wild_guess_messages (challenge_id, sender_user_id, sender_type, message_text, message_type) VALUES (?, ?, ?, ?, ?)',
-    [challengeId, senderId, senderType, messageText, messageType]
+    'INSERT INTO wild_guess_messages (challenge_id, sender_user_id, sender_type, message_text, message_type, sender_name) VALUES (?, ?, ?, ?, ?, ?)',
+    [challengeId, senderId, senderType, messageText, messageType, senderName]
   );
   return result.insertId;
 }

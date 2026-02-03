@@ -29,12 +29,20 @@ export default function WildGuessChallenge() {
         }
 
         const data = await response.json();
-        setChallenge(data.challenge);
+        setChallenge({
+          ...data.challenge,
+          targetUser: data.targetUser
+        });
 
-        // Set current user (in production, get from auth context)
+        // Ensure anonymous user exists in session
+        const storedId = sessionStorage.getItem(`anonymous_id_${token}`);
+        const anonymousId = storedId || `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        if (!storedId) {
+          sessionStorage.setItem(`anonymous_id_${token}`, anonymousId);
+        }
         setCurrentUser({
-          id: data.challenge.anonymous_user_id || Math.random(),
-          username: 'Anonymous User'
+          id: anonymousId,
+          isAnonymous: true
         });
       } catch (err) {
         setError(err.message);
@@ -107,6 +115,10 @@ export default function WildGuessChallenge() {
         </div>
       </div>
     );
+  }
+
+  if (!challenge) {
+    return null;
   }
 
   return (

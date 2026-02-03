@@ -96,6 +96,7 @@ async function initializeDatabase() {
         challenge_id INT NOT NULL,
         sender_user_id INT,
         sender_type ENUM('anonymous', 'registered') NOT NULL,
+         sender_name VARCHAR(100),
         message_text TEXT NOT NULL,
         message_type ENUM('text', 'emoji', 'hint', 'system') DEFAULT 'text',
         is_read BOOLEAN DEFAULT FALSE,

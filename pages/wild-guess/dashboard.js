@@ -69,7 +69,7 @@ export default function WildGuessDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: userId,
-          timerDuration: 300
+          timerDuration: 600
         })
       });
 

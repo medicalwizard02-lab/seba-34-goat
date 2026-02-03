@@ -118,6 +118,7 @@
 | challenge_id | INT (FK → wild_guess_challenges) | Parent challenge |
 | sender_user_id | INT (FK → users) | Who sent the message |
 | sender_type | ENUM | 'anonymous' or 'registered' |
+| sender_name | VARCHAR(100) | Name shown for anonymous sender |
 | message_text | TEXT | Message content |
 | message_type | ENUM | 'text', 'emoji', 'hint', 'system' |
 | is_read | BOOLEAN | Read status |

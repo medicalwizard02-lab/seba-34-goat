@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ArrowLeft, Shield, Clock, Gift, MoreVertical, AlertCircle, Share2 } from 'lucide-react';
+import { ArrowLeft, Shield, Clock, Gift, MoreVertical, AlertCircle, Share2, UserCircle } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import useRealtimeChat from '../hooks/useRealtimeChat';
@@ -23,7 +23,7 @@ const WildGuessChatScreen = ({
     sendMessage,
     sendTypingIndicator,
     fetchMessages
-  } = useRealtimeChat(challenge?.id, currentUser?.id);
+    } = useRealtimeChat(challenge?.id, currentUser?.id);
 
   const messagesEndRef = useRef(null);
   const [timeRemaining, setTimeRemaining] = React.useState(null);
@@ -112,6 +112,30 @@ const WildGuessChatScreen = ({
                 🎭 {challenge?.status === 'identity_revealed' ? 'Challenge Complete!' : 'Wild Guess'}
               </h1>
               <p className="text-xs text-blue-100">Anonymous Challenge</p>
+              <div className="mt-2 flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 bg-white/10 rounded-full px-2 py-1">
+                  <UserCircle className="w-4 h-4 text-white/80" />
+                  <span className="text-white/90">Anonymous</span>
+                </div>
+                {challenge?.targetUser && (
+                  <div className="flex items-center gap-2 bg-white/10 rounded-full px-2 py-1">
+                    {challenge.targetUser.avatar_url ? (
+                      <img
+                        src={challenge.targetUser.avatar_url}
+                        alt={challenge.targetUser.username || 'User'}
+                        className="w-4 h-4 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full bg-white/30 flex items-center justify-center text-[10px]">
+                        {(challenge.targetUser.username || 'U').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-white/90">
+                      {challenge.targetUser.username || 'User'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -178,8 +202,7 @@ const WildGuessChatScreen = ({
               <ChatMessage
                 key={msg.id || index}
                 message={msg}
-                isOwn={msg.sender_type === 'registered' && msg.sender_user_id === currentUser?.id}
-                senderName={msg.sender_type === 'anonymous' ? '🔒 Anonymous' : currentUser?.username}
+                isOwn={msg.sender_user_id === currentUser?.id}
               />
             ))}
             <div ref={messagesEndRef} />
