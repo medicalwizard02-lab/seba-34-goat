@@ -249,7 +249,6 @@ export default function HeartBuddyLaunch() {
       setSignedIn(true);
       setPhone(user.phone);
       loadUserRelationships(user.phone);
-      loadUserGifts(user.phone);
     }
   }, []);
 
@@ -278,28 +277,10 @@ export default function HeartBuddyLaunch() {
   };
 
 
-  // Load user gifts
+  // Load user gifts (deprecated - keeping for backward compatibility)
   const loadUserGifts = async (userPhone) => {
-    try {
-      const response = await fetch(`${API_URL}/ngl/gifts/${userPhone}`);
-      const data = await parseJsonResponse(response);
-      if (response.ok && data.gifts) {
-        const oldLength = userGifts.length;
-        const newGifts = data.gifts;
-        setUserGifts(newGifts);
-        
-        // If new gift received, show confetti and highlight it
-        if (newGifts.length > oldLength) {
-          const latestGift = newGifts[0];
-          setNewGiftId(latestGift.id);
-          setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 2000);
-          setTimeout(() => setNewGiftId(null), 4000);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load gifts:", err);
-    }
+    // NGL gifts feature removed - using Wild Guess now
+    console.log('Gift loading disabled - using Wild Guess feature');
   };
 
   // Handle sign up/login
