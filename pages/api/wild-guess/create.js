@@ -16,7 +16,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'userId is required' });
     }
 
+    console.log('Creating challenge for userId:', userId);
+    
     const challenge = await dbHelpers.createWildGuessChallenge(userId, timerDuration);
+    
+    console.log('Challenge created:', challenge);
 
     // Helper to encode share links
     const encodeShareLink = (baseLink, platform) => {
@@ -48,6 +52,10 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error creating challenge:', error);
-    res.status(500).json({ error: 'Failed to create challenge' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to create challenge',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 }
