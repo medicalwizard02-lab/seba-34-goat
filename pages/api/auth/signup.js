@@ -111,6 +111,7 @@ export default function handler(req, res) {
     return res.json({
       message: 'Login successful',
       user: {
+        id: user.id,
         phone: user.phone,
         freeChecksRemaining: user.free_checks_remaining
       }
@@ -130,6 +131,7 @@ export default function handler(req, res) {
   return res.json({
     message: 'Account created successfully',
     user: {
+      id: newUser.id,
       phone: newUser.phone,
       freeChecksRemaining: newUser.free_checks_remaining
     }
